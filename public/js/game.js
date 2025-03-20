@@ -41,12 +41,20 @@ function setupEventListeners() {
     // Join button click
     joinBtn.addEventListener('click', () => {
         playerName = playerNameInput.value.trim();
-        if (playerName) {
-            socket.emit('joinGame', playerName);
-        } else {
-            showNotification('Please enter a name');
+        const password = document.getElementById('game-password').value;
+        
+        if (!playerName) {
+          showNotification('Please enter a name');
+          return;
         }
-    });
+        
+        if (password !== "e403") {
+          showNotification('Incorrect password');
+          return;
+        }
+        
+        socket.emit('joinGame', playerName);
+      });
     
     // Ready button click
     readyBtn.addEventListener('click', () => {
@@ -74,7 +82,20 @@ function setupEventListeners() {
             showNotification(`You selected ${suit} as trump`);
         });
     });
-    
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          // Save game state when page becomes hidden
+          localStorage.setItem('gameState', JSON.stringify(gameState));
+          localStorage.setItem('playerState', JSON.stringify(playerState));
+          localStorage.setItem('playerId', playerId);
+          localStorage.setItem('playerName', playerName);
+        } else if (document.visibilityState === 'visible') {
+          // Check if we need to reconnect
+          if (socket.disconnected) {
+            socket.connect();
+          }
+        }
+      });
     // Next round button click
     document.getElementById('next-round-btn').addEventListener('click', () => {
         roundEndDialog.classList.add('hidden');

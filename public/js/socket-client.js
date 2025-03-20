@@ -100,3 +100,29 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SocketClient;
 }
+socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+    showNotification('Connection lost. Attempting to reconnect...');
+    
+    // Store game state locally
+    localStorage.setItem('gameState', JSON.stringify(gameState));
+    localStorage.setItem('playerState', JSON.stringify(playerState));
+    localStorage.setItem('playerId', playerId);
+    localStorage.setItem('playerName', playerName);
+  });
+  
+  socket.on('connect', () => {
+    // Check if we're reconnecting
+    const storedPlayerId = localStorage.getItem('playerId');
+    const storedPlayerName = localStorage.getItem('playerName');
+    
+    if (storedPlayerId && storedPlayerName) {
+      // Attempt to rejoin the game
+      socket.emit('rejoinGame', {
+        previousId: storedPlayerId,
+        name: storedPlayerName
+      });
+      
+      showNotification('Reconnected to game!');
+    }
+  });

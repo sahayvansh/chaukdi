@@ -155,5 +155,27 @@ function initializeSocketHandlers(io) {
     });
   });
 }
-
+    socket.on('rejoinGame', (data) => {
+      // Logic to handle player rejoining with previous ID
+      const playerIndex = game.players.findIndex(p => p.id === data.previousId);
+      
+      if (playerIndex !== -1) {
+        // Update the player's socket ID
+        game.players[playerIndex].id = socket.id;
+        socket.join('game-room');
+        
+        // Send current game state
+        socket.emit('gameState', game.getGameState());
+        socket.emit('playerState', game.getPlayerState(socket.id));
+        
+        io.to('game-room').emit('playerRejoined', {
+          oldId: data.previousId,
+          newId: socket.id,
+          name: data.name
+        });
+      } else {
+        // Player not found, join as new
+        socket.emit('rejoinFailed');
+      }
+    });
 module.exports = { initializeSocketHandlers };
