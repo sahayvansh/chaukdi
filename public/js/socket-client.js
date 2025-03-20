@@ -91,8 +91,8 @@ class SocketClient {
     }
     
     // Join the game with a player name
-    joinGame(playerName, password) {
-        this.emit('joinGame', { name: playerName, password: password });
+    joinGame(playerName) {
+        this.emit('joinGame', playerName);
     }
     
     // Set player as ready

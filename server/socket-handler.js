@@ -1,24 +1,13 @@
 const Game = require('./game');
 
 let game = new Game();
-const GAME_PASSWORD = "e403";
 
 function initializeSocketHandlers(io) {
     io.on('connection', (socket) => {
         console.log(`Player connected: ${socket.id}`);
 
         // Handle player joining
-        socket.on('joinGame', (data) => {
-            // Check if data is an object with name and password
-            const playerName = typeof data === 'object' ? data.name : data;
-            const password = typeof data === 'object' ? data.password : null;
-            
-            // Verify password
-            if (password !== GAME_PASSWORD) {
-                socket.emit('error', { message: 'Incorrect password' });
-                return;
-            }
-            
+        socket.on('joinGame', (playerName) => {
             const player = game.addPlayer(socket.id, playerName);
             
             if (player) {
