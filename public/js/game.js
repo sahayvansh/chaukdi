@@ -40,16 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     // Join button click
     joinBtn.addEventListener('click', () => {
-        playerName = playerNameInput.value.trim();
-        const password = document.getElementById('game-password').value;
-        
+        playerName = playerNameInput.value.trim();        
         if (!playerName) {
           showNotification('Please enter a name');
-          return;
-        }
-        
-        if (password !== "e403") {
-          showNotification('Incorrect password');
           return;
         }
         
