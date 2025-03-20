@@ -17,7 +17,9 @@ class SocketClient {
             'trumpSelected': [],
             'trickComplete': [],
             'roundComplete': [],
-            'gameComplete': []
+            'gameComplete': [],
+            'rejoinFailed': [],
+            'playerRejoined': []
         };
         
         this.init();
@@ -37,11 +39,42 @@ class SocketClient {
         // Special handling for connection event
         this.socket.on('connect', () => {
             console.log('Connected to server with ID:', this.socket.id);
+            
+            // Check if we're reconnecting
+            const storedPlayerId = localStorage.getItem('playerId');
+            const storedPlayerName = localStorage.getItem('playerName');
+            
+            if (storedPlayerId && storedPlayerName) {
+                // Attempt to rejoin the game
+                this.emit('rejoinGame', {
+                    previousId: storedPlayerId,
+                    name: storedPlayerName
+                });
+                
+                console.log('Attempting to rejoin game as', storedPlayerName);
+            }
         });
         
         // Special handling for disconnection
         this.socket.on('disconnect', () => {
             console.log('Disconnected from server');
+            
+            // Store game state locally if available
+            if (window.gameState) {
+                localStorage.setItem('gameState', JSON.stringify(window.gameState));
+            }
+            
+            if (window.playerState) {
+                localStorage.setItem('playerState', JSON.stringify(window.playerState));
+            }
+            
+            if (window.playerId) {
+                localStorage.setItem('playerId', window.playerId);
+            }
+            
+            if (window.playerName) {
+                localStorage.setItem('playerName', window.playerName);
+            }
         });
     }
     
@@ -58,8 +91,8 @@ class SocketClient {
     }
     
     // Join the game with a player name
-    joinGame(playerName) {
-        this.emit('joinGame', playerName);
+    joinGame(playerName, password) {
+        this.emit('joinGame', { name: playerName, password: password });
     }
     
     // Set player as ready
@@ -82,14 +115,58 @@ class SocketClient {
         this.emit('playCard', card);
     }
     
+    // Attempt to rejoin a game
+    rejoinGame(previousId, name) {
+        this.emit('rejoinGame', { previousId, name });
+    }
+    
     // Get the socket ID
     getId() {
         return this.socket.id;
+    }
+    
+    // Check if socket is connected
+    isConnected() {
+        return this.socket.connected;
+    }
+    
+    // Reconnect if disconnected
+    reconnect() {
+        if (!this.socket.connected) {
+            this.socket.connect();
+        }
     }
 }
 
 // Create a global socketClient instance
 const socketClient = new SocketClient();
+
+// Handle page visibility changes
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        // Save game state when page becomes hidden
+        if (window.gameState) {
+            localStorage.setItem('gameState', JSON.stringify(window.gameState));
+        }
+        
+        if (window.playerState) {
+            localStorage.setItem('playerState', JSON.stringify(window.playerState));
+        }
+        
+        if (window.playerId) {
+            localStorage.setItem('playerId', window.playerId);
+        }
+        
+        if (window.playerName) {
+            localStorage.setItem('playerName', window.playerName);
+        }
+    } else if (document.visibilityState === 'visible') {
+        // Check if we need to reconnect
+        if (socketClient && !socketClient.isConnected()) {
+            socketClient.reconnect();
+        }
+    }
+});
 
 // If running in a browser environment
 if (typeof window !== 'undefined') {
@@ -100,29 +177,3 @@ if (typeof window !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SocketClient;
 }
-socket.on('disconnect', () => {
-    console.log('Disconnected from server');
-    showNotification('Connection lost. Attempting to reconnect...');
-    
-    // Store game state locally
-    localStorage.setItem('gameState', JSON.stringify(gameState));
-    localStorage.setItem('playerState', JSON.stringify(playerState));
-    localStorage.setItem('playerId', playerId);
-    localStorage.setItem('playerName', playerName);
-  });
-  
-  socket.on('connect', () => {
-    // Check if we're reconnecting
-    const storedPlayerId = localStorage.getItem('playerId');
-    const storedPlayerName = localStorage.getItem('playerName');
-    
-    if (storedPlayerId && storedPlayerName) {
-      // Attempt to rejoin the game
-      socket.emit('rejoinGame', {
-        previousId: storedPlayerId,
-        name: storedPlayerName
-      });
-      
-      showNotification('Reconnected to game!');
-    }
-  });
